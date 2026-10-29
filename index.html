@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIFA Match Team Lineup</title>
+<style>
+:root{--ink:#1d2433;--muted:#667085;--line:#d0d5dd;--accent:#1e4fa3;--yellow:#fff1a8;--red:#ffd3d3}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Arial,Helvetica,sans-serif;color:var(--ink);background:#f4f6fa;font-size:14px}
+.wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px}
+.top{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+label{display:block;font-weight:600;margin-bottom:6px}
+select,input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;width:100%;background:#fff}
+select{font-size:15px;padding:10px}
+.src{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:13px}
+#srcInfo{color:var(--muted)}
+#srcInfo.warn{color:#b54708;font-weight:600}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;background:#fff}
+.chip.bad{background:var(--red);border-color:#e88}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:middle}
+th{background:#eef2f8;font-size:13px}
+td input{border:none;padding:7px 6px;background:transparent;width:100%;font:inherit}
+td input:focus{outline:2px solid var(--accent);background:#fff}
+td input[readonly]{color:var(--ink)}
+tr.internal td{background:var(--yellow)}
+tr.external td{background:var(--red)}
+tr.external td input:not([readonly]){background:#fff}
+tr.sect td{background:#e6ebf4;font-weight:700;font-size:13px}
+.sn{width:50px;text-align:center}
+.jr{width:70px}
+td.status{font-size:12px;font-weight:600;white-space:nowrap;padding:4px 10px}
+.legend{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.legend span{padding:4px 10px;border-radius:4px;font-size:12px;border:1px solid var(--line)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+button{font:inherit;padding:10px 18px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;font-weight:600}
+button.sec{background:#fff;color:var(--accent)}
+button.small{padding:6px 12px;font-size:13px}
+#msg{margin-top:12px}
+.err{background:#fef3f2;border:1px solid #fda29b;color:#912018;padding:9px 12px;border-radius:8px;margin:6px 0}
+.ok{background:#ecfdf3;border:1px solid #abefc6;color:#067647;padding:10px 12px;border-radius:8px}
+.sugg{position:fixed;display:none;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:50;max-height:280px;overflow:auto}
+.sugg div{padding:7px 10px;cursor:pointer;font-size:13px;white-space:nowrap}
+.sugg div.on{background:#e8efff}
+.sugg small{color:var(--muted)}
+.officials table{min-width:560px}
+.officials th,.officials td{padding:6px 8px}
+.officials input{padding:8px}
+.officials th.title{text-align:center;font-size:15px;background:#eef2f8}
+canvas.sig{display:block;width:100%;height:78px;border:1px dashed #b0b7c3;border-radius:6px;background:#fff;touch-action:none;cursor:crosshair}
+.sigbar{display:flex;justify-content:flex-end;margin-top:2px}
+.linkbtn{background:none;border:none;color:var(--muted);font-size:12px;padding:2px 4px;font-weight:400;cursor:pointer;box-shadow:none}
+.checkedwrap{display:flex;justify-content:flex-end;margin-top:14px}
+.checked{width:min(340px,100%);border:2px solid #000;padding:8px 12px}
+.checked canvas.sig{height:70px}
+@media (max-width:700px){.top{grid-template-columns:1fr}}
+@media print{.no-print{display:none!important}body{background:#fff}.card{border:none;padding:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="card">
+  <h1>DIFA Match Team Lineup</h1>
+  <p class="sub">Choose the team first. Type a DIFA No, Reg. No., or player name to search; the name and status fill in automatically.</p>
+  <div class="top">
+    <div>
+      <label for="team">Team *</label>
+      <select id="team"><option value="">— Select team —</option></select>
+    </div>
+    <div>
+      <label for="mdate">Match date</label>
+      <input type="date" id="mdate">
+    </div>
+  </div>
+  <div class="src">
+    <span id="srcInfo">Loading player list…</span>
+    <button type="button" class="sec small" id="btnLoad">Load player list…</button>
+    <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" hidden>
+  </div>
+  <div class="summary" id="summary"></div>
+</div>
+
+<div class="card tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="sn">SN</th>
+        <th>DIFA No / Reg. No. / Name</th>
+        <th class="jr">JR No</th>
+        <th>Player Name</th>
+        <th>Position</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="legend">
+    <span style="background:var(--yellow)">Yellow = Internal guest (registered with another DIFA team)</span>
+    <span style="background:var(--red)">Red = External guest (not in DIFA list, enter name manually)</span>
+  </div>
+</div>
+
+<div class="card officials tablewrap">
+  <table>
+    <thead>
+      <tr><th colspan="4" class="title">TEAM OFFICIALS</th></tr>
+      <tr><th style="width:44px">#</th><th>Name</th><th>Contact</th><th style="width:30%">Sign</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><input class="off-name" placeholder="Official 1 name" autocomplete="off"></td>
+        <td><input class="off-contact" placeholder="Contact no." inputmode="tel" autocomplete="off"></td>
+        <td><canvas class="sig" data-pad="off0"></canvas><div class="sigbar"><button type="button" class="linkbtn" data-clear="off0">Clear</button></div></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><input class="off-name" placeholder="Official 2 name" autocomplete="off"></td>
+        <td><input class="off-contact" placeholder="Contact no." inputmode="tel" autocomplete="off"></td>
+        <td><canvas class="sig" data-pad="off1"></canvas><div class="sigbar"><button type="button" class="linkbtn" data-clear="off1">Clear</button></div></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="checkedwrap">
+    <div class="checked">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-weight:700;white-space:nowrap">Checked by:</span><input id="checkedName" placeholder="Type name" autocomplete="off" style="padding:6px 8px"></div>
+      <canvas class="sig" data-pad="checked"></canvas>
+      <div class="sigbar"><button type="button" class="linkbtn" data-clear="checked">Clear</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="card no-print">
+  <div class="actions">
+    <button type="button" class="sec" id="btnCheck">Check form</button>
+    <button type="button" id="btnPdf">Download PDF</button>
+    <button type="button" class="sec" id="btnClear">Clear form</button>
+  </div>
+  <div id="msg"></div>
+</div>
+
+</div>
+<div id="sugg" class="sugg"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const MAX_GUESTS = 5;      // max guest players per lineup
+const MAX_EXTERNAL = 2;    // max open-category (external) guests
+const TOTAL = 20;          // 11 starters + 9 substitutes
+const SUBS_FROM = 11;      // index where substitutes begin
+const PLAYER_FILES = ['players.xlsx', 'players.csv'];  // auto-load candidates, same folder as this form
+const POSITIONS = ['GK','CB','RB','LB','RWB','LWB','DM','CM','AM','RW','LW','ST','CF'];
+const STATUS_TEXT = {empty:'', noList:'Load player list first', pending:'Select team first', registered:'Registered', internal:'Internal guest', external:'External guest'};
+
+const $ = id => document.getElementById(id);
+const teamSel = $('team'), dateIn = $('mdate'), tbody = $('tbody'), summaryEl = $('summary'), msgEl = $('msg'), srcInfo = $('srcInfo'), sugg = $('sugg');
+
+/* ---------- player data (loaded from separate file) ---------- */
+let PLAYERS = [], CLUBS = [], INDEX = new Map();
+const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/*PARSE*/
+function parseCsv(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const out = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell); out.push(row); row = []; cell = '';
+    } else cell += c;
+  }
+  if (cell.length || row.length) { row.push(cell); out.push(row); }
+  return out;
+}
+
+function processMatrix(m) {
+  const hi = m.findIndex(r => r.some(c => /^reg\.?\s*no\.?$/i.test(String(c).trim())));
+  if (hi < 0) throw new Error('Header row not found (expected a "Reg. No." column).');
+  const h = m[hi].map(c => String(c).trim());
+  const col = re => h.findIndex(c => re.test(c));
+  const cD = col(/^difa/i), cR = col(/^reg/i), cN = col(/player/i), cC = col(/^club name$/i), cK = col(/^(club|short code)$/i);
+  if ([cD, cR, cN, cC].some(x => x < 0)) throw new Error('Missing columns: DIFA NO, Reg. No., Registered Player, Club Name.');
+  const list = [], codes = new Map();
+  for (let i = hi + 1; i < m.length; i++) {
+    const r = m[i] || [];
+    const reg = String(r[cR] ?? '').trim();
+    if (!reg) continue;
+    let d = String(r[cD] ?? '').trim();
+    if (/^\d+$/.test(d)) d = d.padStart(6, '0');
+    const club = String(r[cC] ?? '').trim();
+    const code = cK >= 0 ? String(r[cK] ?? '').trim() : '';
+    if (club && code && !codes.has(club)) codes.set(club, code);
+    list.push({ d, r: reg, n: String(r[cN] ?? '').trim().toUpperCase(), c: club });
+  }
+  return { list, codes };
+}
+/*END PARSE*/
+
+function lookup(raw) {
+  const q = String(raw || '').trim();
+  if (!q) return null;
+  let k = norm(q);
+  if (/^\d+$/.test(k) && k.length < 6) k = k.padStart(6, '0');
+  if (INDEX.has(k)) return INDEX.get(k);
+  const up = q.toUpperCase();   // exact name match, only if unique
+  const byName = PLAYERS.filter(p => p.n === up);
+  return byName.length === 1 ? byName[0] : null;
+}
+
+function setData(list, codes, label) {
+  PLAYERS = list;
+  INDEX = new Map();
+  PLAYERS.forEach(p => { INDEX.set(norm(p.d), p); INDEX.set(norm(p.r), p); });
+  CLUBS = [...new Set(PLAYERS.map(p => p.c).filter(Boolean))].sort()
+    .map(n => ({ name: n, code: codes.get(n) || '' }));
+  const cur = teamSel.value;
+  teamSel.innerHTML = '<option value="">— Select team —</option>';
+  CLUBS.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.name; o.textContent = c.name + (c.code ? ' (' + c.code + ')' : '');
+    teamSel.appendChild(o);
+  });
+  if (CLUBS.some(c => c.name === cur)) teamSel.value = cur;
+  rows.forEach((r, i) => { setRaw(r, r.raw); evalRow(r); refreshRow(i); });
+  srcInfo.className = '';
+  srcInfo.textContent = 'Player list: ' + PLAYERS.length + ' players, ' + CLUBS.length + ' teams (' + label + ')';
+  refreshSummary();
+}
+
+async function ingest(name, data) {
+  try {
+    let m;
+    if (/\.csv$/i.test(name)) {
+      m = parseCsv(data);
+    } else {
+      if (!window.XLSX) throw new Error('Excel reader did not load (internet needed). Save the list as CSV and load that instead.');
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets['Players'] || wb.Sheets[wb.SheetNames[0]];
+      m = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    }
+    const { list, codes } = processMatrix(m);
+    setData(list, codes, name);
+  } catch (e) {
+    srcInfo.className = 'warn';
+    srcInfo.textContent = 'Could not read player list: ' + e.message;
+  }
+}
+
+async function autoLoad() {
+  for (const f of PLAYER_FILES) {
+    let res;
+    try { res = await fetch(f); } catch (e) { continue; }   // blocked when the form is opened by double-click
+    if (!res || !res.ok) continue;
+    return ingest(f, f.endsWith('.csv') ? await res.text() : await res.arrayBuffer());
+  }
+  srcInfo.className = 'warn';
+  srcInfo.textContent = 'No player list loaded. Click "Load player list…" and choose the DIFA players file (.xlsx or .csv).';
+}
+
+$('btnLoad').addEventListener('click', () => $('fileIn').click());
+$('fileIn').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const data = /\.csv$/i.test(f.name) ? await f.text() : await f.arrayBuffer();
+  await ingest(f.name, data);
+  e.target.value = '';
+});
+
+/* ---------- rows ---------- */
+const rows = Array.from({length: TOTAL}, (_, i) => ({
+  sn: i + 1, raw: '', jr: '', name: '', pos: '', player: null, status: 'empty'
+}));
+
+const dl = document.createElement('datalist');
+dl.id = 'posList';
+POSITIONS.forEach(p => { const o = document.createElement('option'); o.value = p; dl.appendChild(o); });
+document.body.appendChild(dl);
+
+function sectionRow(label) {
+  const tr = document.createElement('tr');
+  tr.className = 'sect';
+  tr.innerHTML = '<td colspan="6">' + label + '</td>';
+  tbody.appendChild(tr);
+}
+
+function buildTable() {
+  tbody.innerHTML = '';
+  rows.forEach((r, i) => {
+    if (i === 0) sectionRow('Starting XI (1–11)');
+    if (i === SUBS_FROM) sectionRow('Substitutions (12–20)');
+    const tr = document.createElement('tr');
+    tr.dataset.i = i;
+    tr.innerHTML =
+      '<td class="sn">' + r.sn + '</td>' +
+      '<td><input data-f="raw" autocomplete="off" placeholder="No. or name"></td>' +
+      '<td><input data-f="jr" class="jr" inputmode="numeric" maxlength="2" autocomplete="off"></td>' +
+      '<td><input data-f="name" autocomplete="off"></td>' +
+      '<td><input data-f="pos" list="posList" autocomplete="off"></td>' +
+      '<td class="status"></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function setRaw(r, value) {
+  const old = r.player;
+  r.raw = value;
+  r.player = lookup(value);
+  if (old && !r.player) r.name = '';
+}
+
+function evalRow(r) {
+  if (!PLAYERS.length) { r.status = r.raw.trim() ? 'noList' : 'empty'; return; }
+  const team = teamSel.value;
+  if (r.player) {
+    r.name = r.player.n;
+    r.status = !team ? 'pending' : (r.player.c === team ? 'registered' : 'internal');
+  } else if (r.raw.trim() || r.name.trim()) {
+    r.status = 'external';
+  } else {
+    r.status = 'empty';
+  }
+}
+
+function refreshRow(i) {
+  const r = rows[i];
+  const tr = tbody.querySelector('tr[data-i="' + i + '"]');
+  tr.className = r.status === 'internal' ? 'internal' : (r.status === 'external' ? 'external' : '');
+  const raw = tr.querySelector('[data-f="raw"]');
+  const name = tr.querySelector('[data-f="name"]');
+  if (document.activeElement !== name) name.value = r.name;
+  name.readOnly = !!r.player;
+  name.placeholder = r.player ? '' : 'Enter name';
+  tr.querySelector('.status').textContent = STATUS_TEXT[r.status];
+}
+
+/* ---------- name / number suggestions ---------- */
+let suggRow = -1, suggItems = [], suggIdx = 0;
+
+function search(q) {
+  const Q = q.trim().toUpperCase();
+  if (Q.length < 2 || !PLAYERS.length) return [];
+  return PLAYERS.filter(p => p.n.includes(Q) || p.d.includes(Q) || p.r.toUpperCase().includes(Q)).slice(0, 8);
+}
+
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+
+function showSugg(i, input) {
+  suggItems = search(input.value);
+  suggRow = i; suggIdx = 0;
+  if (!suggItems.length) return hideSugg();
+  sugg.innerHTML = suggItems.map((p, k) =>
+    '<div data-k="' + k + '" class="' + (k === 0 ? 'on' : '') + '">' + esc(p.n) +
+    ' <small>· ' + esc(p.d) + ' · ' + esc(p.c) + '</small></div>').join('');
+  const b = input.getBoundingClientRect();
+  sugg.style.left = b.left + 'px';
+  sugg.style.top = (b.bottom + 2) + 'px';
+  sugg.style.width = Math.max(b.width, 360) + 'px';
+  sugg.style.display = 'block';
+}
+
+function hideSugg() { sugg.style.display = 'none'; suggRow = -1; }
+
+function highlight() { sugg.querySelectorAll('div').forEach((d, k) => d.classList.toggle('on', k === suggIdx)); }
+
+function pick(k) {
+  const p = suggItems[k];
+  if (!p || suggRow < 0) return;
+  const i = suggRow, r = rows[i];
+  const tr = tbody.querySelector('tr[data-i="' + i + '"]');
+  tr.querySelector('[data-f="raw"]').value = p.d;
+  setRaw(r, p.d);
+  evalRow(r); refreshRow(i); refreshSummary();
+  hideSugg();
+  tr.querySelector('[data-f="jr"]').focus();
+}
+
+sugg.addEventListener('mousedown', e => {
+  const d = e.target.closest('div[data-k]');
+  if (d) { e.preventDefault(); pick(+d.dataset.k); }
+});
+tbody.addEventListener('keydown', e => {
+  if (e.target.dataset.f !== 'raw' || sugg.style.display !== 'block') return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); suggIdx = Math.min(suggIdx + 1, suggItems.length - 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); suggIdx = Math.max(suggIdx - 1, 0); }
+  else if (e.key === 'Enter') { e.preventDefault(); pick(suggIdx); return; }
+  else if (e.key === 'Escape') { hideSugg(); return; }
+  else return;
+  highlight();
+});
+tbody.addEventListener('focusout', e => {
+  if (e.target.dataset.f === 'raw') setTimeout(hideSugg, 150);
+});
+window.addEventListener('scroll', hideSugg, true);
+window.addEventListener('resize', hideSugg);
+
+/* ---------- input handling ---------- */
+tbody.addEventListener('input', e => {
+  const tr = e.target.closest('tr[data-i]');
+  if (!tr) return;
+  const i = +tr.dataset.i, r = rows[i], f = e.target.dataset.f;
+  if (f === 'raw') {
+    setRaw(r, e.target.value);
+    evalRow(r);
+    refreshRow(i);
+    refreshSummary();
+    if (r.player) hideSugg(); else showSugg(i, e.target);
+    return;
+  } else if (f === 'jr') {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 2);
+    r.jr = e.target.value;
+  } else if (f === 'pos') {
+    e.target.value = e.target.value.toUpperCase();
+    r.pos = e.target.value.trim();
+  } else if (f === 'name') {
+    r.name = e.target.value;
+  }
+  evalRow(r);
+  refreshRow(i);
+  refreshSummary();
+});
+
+teamSel.addEventListener('change', () => {
+  rows.forEach((r, i) => { evalRow(r); refreshRow(i); });
+  refreshSummary();
+});
+
+/* ---------- summary & validation ---------- */
+function counts() {
+  const c = {filled: 0, internal: 0, external: 0, registered: 0};
+  rows.forEach(r => {
+    if (r.status !== 'empty') c.filled++;
+    if (r.status === 'internal') c.internal++;
+    if (r.status === 'external') c.external++;
+    if (r.status === 'registered') c.registered++;
+  });
+  c.guests = c.internal + c.external;
+  return c;
+}
+
+function refreshSummary() {
+  const c = counts();
+  const chip = (text, bad) => '<span class="chip' + (bad ? ' bad' : '') + '">' + text + '</span>';
+  summaryEl.innerHTML =
+    chip('Filled ' + c.filled + '/' + TOTAL) +
+    chip('Guests ' + c.guests + '/' + MAX_GUESTS, c.guests > MAX_GUESTS) +
+    chip('Internal guests ' + c.internal) +
+    chip('External guests ' + c.external + '/' + MAX_EXTERNAL, c.external > MAX_EXTERNAL);
+}
+
+function validate() {
+  const errs = [], c = counts();
+  if (!PLAYERS.length) errs.push('Load the player list first.');
+  if (!teamSel.value) errs.push('Select the team at the top.');
+  if (!dateIn.value) errs.push('Enter the match date.');
+  const jrSeen = new Map(), pSeen = new Map();
+  rows.forEach(r => {
+    if (r.status === 'empty') {
+      // Starting XI (rows 1-11) are mandatory; substitutes (12-20) are optional
+      if (r.sn <= SUBS_FROM) errs.push('Starting XI row ' + r.sn + ' is empty.');
+      return;
+    }
+    const miss = [];
+    if (!r.name.trim()) miss.push('player name');
+    if (!r.jr) miss.push('JR No');
+    if (miss.length) errs.push('Row ' + r.sn + ': missing ' + miss.join(', ') + '.');
+    if (r.jr) {
+      if (jrSeen.has(r.jr)) errs.push('JR No ' + r.jr + ' is used in rows ' + jrSeen.get(r.jr) + ' and ' + r.sn + '.');
+      else jrSeen.set(r.jr, r.sn);
+    }
+    if (r.player) {
+      if (pSeen.has(r.player.d)) errs.push(r.player.n + ' is listed twice (rows ' + pSeen.get(r.player.d) + ' and ' + r.sn + ').');
+      else pSeen.set(r.player.d, r.sn);
+    }
+  });
+  if (c.guests > MAX_GUESTS) errs.push('Maximum ' + MAX_GUESTS + ' guest players allowed (currently ' + c.guests + ').');
+  if (c.external > MAX_EXTERNAL) errs.push('Maximum ' + MAX_EXTERNAL + ' external guests allowed (currently ' + c.external + ').');
+  return errs;
+}
+
+function showErrors(errs) {
+  msgEl.innerHTML = errs.length
+    ? errs.map(e => '<div class="err">' + esc(e) + '</div>').join('')
+    : '<div class="ok">All checks passed. You can download the PDF.</div>';
+}
+
+/* ---------- PDF ---------- */
+function fmtDate(iso) { const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; }
+
+function fit(doc, text, maxW) {
+  let t = String(text);
+  while (t.length > 1 && doc.getTextWidth(t) > maxW) t = t.slice(0, -1);
+  return t;
+}
+
+function downloadPdf() {
+  const errs = validate();
+  showErrors(errs);
+  if (errs.length) return;
+
+  const teamName = teamSel.value;
+  const code = (CLUBS.find(c => c.name === teamName) || {}).code || 'TEAM';
+  const dateStr = fmtDate(dateIn.value);
+
+  if (!window.jspdf) {
+    msgEl.innerHTML = '<div class="err">The PDF library could not load (internet connection needed). The print dialog is opening instead: choose "Save as PDF".</div>';
+    window.print();
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const COLS = [['SN', 12], ['DIFA No', 26], ['JR No', 14], ['Player Name', 70], ['Position', 24], ['Remarks', 34]];
+  const X0 = 15, H = 7, W = 180;
+  let y = 46;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
+  doc.text('DIFA Match Team Lineup Sheet', 105, 20, { align: 'center' });
+  doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+  doc.text('Date: ' + dateStr, X0, 32);
+  doc.text('Team Name: ' + teamName, X0, 39);
+
+  const drawCells = (vals, fill, bold) => {
+    let x = X0;
+    doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(10);
+    COLS.forEach((c, ci) => {
+      doc.setFillColor(...fill); doc.setDrawColor(150); doc.setTextColor(0);
+      doc.rect(x, y, c[1], H, 'FD');
+      doc.text(fit(doc, vals[ci] ?? '', c[1] - 3), x + 1.5, y + 5.5);
+      x += c[1];
+    });
+    y += H;
+  };
+
+  const sectionRow = label => {
+    doc.setFillColor(226, 232, 242); doc.setDrawColor(150); doc.setTextColor(0);
+    doc.rect(X0, y, W, H, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    doc.text(label, X0 + 2, y + 5.5);
+    y += H;
+  };
+
+  const fillOf = r => r.status === 'internal' ? [255, 241, 168] : (r.status === 'external' ? [255, 211, 211] : [255, 255, 255]);
+  const remark = r => r.status === 'internal' ? 'Internal guest' : (r.status === 'external' ? 'External guest' : '');
+
+  drawCells(['SN', 'DIFA No', 'JR No', 'Player Name', 'Position', 'Remarks'], [226, 232, 242], true);
+  sectionRow('Starting XI');
+  rows.forEach((r, i) => {
+    if (i === SUBS_FROM) sectionRow('Substitutions');
+    const difa = r.player ? r.player.d : (r.status === 'external' ? '-' : '');
+    drawCells([r.sn, difa, r.jr, r.name, r.pos, remark(r)], fillOf(r), false);
+  });
+
+  // Team officials
+  y += 6;
+  const offW = [12, 84, 42, 42];
+  doc.setFillColor(226, 232, 242); doc.setDrawColor(150); doc.setTextColor(0);
+  doc.rect(X0, y, W, H, 'FD');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.text('TEAM OFFICIALS', 105, y + 5, { align: 'center' });
+  y += H;
+  let hx = X0;
+  ['#', 'Name', 'Contact', 'Sign'].forEach((t, k) => { doc.rect(hx, y, offW[k], H, 'FD'); doc.text(t, hx + 1.5, y + 5); hx += offW[k]; });
+  y += H;
+  const offNames = [...document.querySelectorAll('.off-name')], offContacts = [...document.querySelectorAll('.off-contact')];
+  const OFF_H = 14;
+  offNames.forEach((n, k) => {
+    let x = X0;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    [String(k + 1), n.value.trim(), offContacts[k].value.trim(), ''].forEach((t, c) => {
+      doc.setFillColor(255, 255, 255); doc.setDrawColor(150);
+      doc.rect(x, y, offW[c], OFF_H, 'FD');
+      if (c < 3) doc.text(fit(doc, t, offW[c] - 3), x + 1.5, y + 8.5);
+      x += offW[c];
+    });
+    const sig = PADS['off' + k] && PADS['off' + k].dataUrl();
+    if (sig) doc.addImage(sig, 'PNG', X0 + 12 + 84 + 42 + 2, y + 2, 38, 10);
+    y += OFF_H;
+  });
+
+  // Checked by
+  y += 6;
+  const cbx = X0 + W - 80;
+  doc.setDrawColor(0); doc.setLineWidth(0.6);
+  doc.rect(cbx, y, 80, 22);
+  doc.setLineWidth(0.2);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.text('Checked by:', cbx + 2, y + 5);
+  const cs = PADS['checked'] && PADS['checked'].dataUrl();
+  if (cs) doc.addImage(cs, 'PNG', cbx + 2, y + 7, 60, 13);
+  const checkedBy = document.getElementById('checkedName').value.trim();
+  if (checkedBy) { doc.setFont('helvetica', 'normal'); doc.text(fit(doc, checkedBy, 52), cbx + 26, y + 5); }
+
+  doc.save('DIFA_Lineup_' + code + '_' + dateIn.value + '.pdf');
+  msgEl.innerHTML = '<div class="ok">PDF downloaded.</div>';
+}
+
+/* ---------- signature pads (mouse, touch and stylus) ---------- */
+const PADS = {};
+function makePad(canvas) {
+  const ctx = canvas.getContext('2d');
+  const pad = { ink: false, drawing: false, last: null };
+  const size = () => {
+    const old = pad.ink ? canvas.toDataURL('image/png') : null;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * ratio);
+    canvas.height = Math.round(rect.height * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#111'; ctx.fillStyle = '#111';
+    if (old) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      img.src = old;
+    }
+  };
+  const pos = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  canvas.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    pad.drawing = true;
+    pad.last = pos(e);
+    ctx.beginPath(); ctx.arc(pad.last.x, pad.last.y, 1.2, 0, Math.PI * 2); ctx.fill();
+    pad.ink = true;
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!pad.drawing) return;
+    e.preventDefault();
+    const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(pad.last.x, pad.last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    pad.last = p;
+  });
+  const end = () => { pad.drawing = false; };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  pad.clear = () => {
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore();
+    pad.ink = false;
+  };
+  pad.dataUrl = () => pad.ink ? canvas.toDataURL('image/png') : null;
+  size();
+  window.addEventListener('resize', size);
+  PADS[canvas.dataset.pad] = pad;
+}
+document.querySelectorAll('canvas.sig').forEach(makePad);
+document.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', () => PADS[b.dataset.clear].clear()));
+
+/* ---------- buttons ---------- */
+$('btnCheck').addEventListener('click', () => showErrors(validate()));
+$('btnPdf').addEventListener('click', downloadPdf);
+$('btnClear').addEventListener('click', () => {
+  if (!confirm('Clear all player entries?')) return;
+  rows.forEach(r => Object.assign(r, { raw: '', jr: '', name: '', pos: '', player: null, status: 'empty' }));
+  tbody.querySelectorAll('input').forEach(inp => { inp.value = ''; });
+  rows.forEach((r, i) => refreshRow(i));
+  refreshSummary();
+  msgEl.innerHTML = '';
+});
+
+/* ---------- init ---------- */
+const t = new Date();
+dateIn.value = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+buildTable();
+rows.forEach((r, i) => refreshRow(i));
+refreshSummary();
+autoLoad();
+</script>
+</body>
+</html>
